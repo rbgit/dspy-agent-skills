@@ -64,5 +64,5 @@ Calling `rlm(...)` returns a `dspy.Prediction` with the signature's output field
 | `deno: command not found` | Install Deno. |
 | `RLM hit max_iterations` | Raise `max_iterations`, or narrow the query. |
 | `Sub-LM call count exceeded` | Raise `max_llm_calls`; check for infinite recursion in tools. |
-| `Output truncated at 10000 chars` | Raise `max_output_chars`, or have the LM sample/aggregate. |
+| `Output truncated at 100000 chars` | Raise `max_output_chars`, or have the LM sample/aggregate. |
 | `KeyError` in final `.answer` | The RLM gave up; print `verbose=True` trace to see why. |

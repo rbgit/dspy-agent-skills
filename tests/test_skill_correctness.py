@@ -9,12 +9,17 @@ and caught it in external review. Each guard maps to a specific pitfall:
 2. Dict-returning metrics — `dspy.Evaluate`'s parallel executor aggregates
    per-example outputs via `sum()`. A dict metric crashes with
    `TypeError: unsupported operand type(s) for +: 'int' and 'dict'`. Metrics
-   must return `dspy.Prediction(score=..., feedback=...)`.
-3. Every skill must ship a runnable `example_*.py` — `docs/usage.md` makes
+   must return `dspy.Prediction(score=..., feedback=...)`. The guard scans
+   code-style returns AND prose mentions AND multi-line dict literals, since
+   any of these will teach an agent the wrong contract.
+3. Stale RLM defaults — `max_output_chars` is 100_000 in DSPy 3.1.3, not
+   10_000. Any reference to the old value is a bug.
+4. Every skill must ship a runnable `example_*.py` — `docs/usage.md` makes
    that claim, and the dry-run smoke-test loop depends on it.
 
-Regex rules ignore blocks that explicitly mark themselves as anti-patterns
-(recognised by a `# BAD` / `# WRONG` marker or a containing heading).
+Rule 2's regex intentionally errs on the side of false positives. To allow an
+intentional anti-pattern mention, put one of the marker words (see
+`_ANTIPATTERN_MARKERS`) on the same line.
 """
 
 from __future__ import annotations
@@ -26,89 +31,172 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 SKILLS = REPO / "skills"
-EXAMPLE_PY_PATTERN = "skills/*/example_*.py"
+DOCS = REPO / "docs"
+EXAMPLE_PY_GLOB = "skills/*/example_*.py"
+TEACHING_FILE_GLOBS = ("skills/**/*.md", "skills/**/*.py", "docs/*.md")
+
+# CHANGELOG describes past state ("replaced X with Y"); linting it for
+# anti-patterns would be a tautology.
+TEACHING_FILE_EXCLUDES = (REPO / "docs" / "CHANGELOG.md",)
 
 
 def _iter_skill_dirs() -> list[Path]:
     return sorted(p for p in SKILLS.iterdir() if p.is_dir())
 
 
+def _iter_teaching_files() -> list[Path]:
+    files: list[Path] = []
+    for glob in TEACHING_FILE_GLOBS:
+        files.extend(REPO.glob(glob))
+    return sorted(set(files) - set(TEACHING_FILE_EXCLUDES))
+
+
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_no_overall_score_in_skills():
+# --- Rule 1: no `.overall_score` anywhere in teaching material -------------
+
+
+def test_no_overall_score_in_teaching_material():
     """`result.overall_score` is the wrong attribute; DSPy returns `.score`."""
     offenders: list[str] = []
-    for path in SKILLS.rglob("*"):
-        if not path.is_file():
-            continue
-        if path.suffix not in {".md", ".py"}:
-            continue
+    for path in _iter_teaching_files():
         text = _read(path)
         for i, line in enumerate(text.splitlines(), 1):
             if "overall_score" in line:
                 offenders.append(f"{path.relative_to(REPO)}:{i}: {line.strip()}")
     assert not offenders, (
-        "`.overall_score` appears in skill docs/examples. DSPy 3.1.x uses "
+        "`.overall_score` appears in skill/docs teaching material. DSPy 3.1.x uses "
         "`result.score`. Offending lines:\n  " + "\n  ".join(offenders)
     )
 
 
-# A dict metric return is a real footgun: it looks plausible (matches the GEPA
-# feedback shape conceptually) but crashes dspy.Evaluate. The "anti-pattern"
-# mentions we intentionally write must include an explicit flag word so this
-# check can ignore them.
-_DICT_RETURN_RE = re.compile(r'return\s*\{\s*"score"\s*:')
+# --- Rule 2: no dict metrics in teaching material (code, prose, multiline) -
+
+# Patterns that indicate a dict-as-metric-return pattern is being taught.
+# Each pattern is permissive on purpose — we want to catch prose like
+# "return `{"score": s, "feedback": f}`" as well as source-code returns.
+_DICT_METRIC_PATTERNS = [
+    # Source: `return {"score": ...` on a single line
+    re.compile(r"return\s*\{\s*['\"]score['\"]\s*:"),
+    # Source or prose: `{"score": ..., "feedback": ...}` on a single line
+    re.compile(r"\{\s*['\"]score['\"]\s*:[^}]*['\"]feedback['\"]\s*:"),
+    re.compile(r"\{\s*['\"]feedback['\"]\s*:[^}]*['\"]score['\"]\s*:"),
+    # Prose: "returns `{"score": float, "feedback": str}`" — catch the type-sig form
+    re.compile(r"\{['\"]score['\"]\s*:\s*float\s*,\s*['\"]feedback['\"]\s*:\s*str\}"),
+]
+
 _ANTIPATTERN_MARKERS = (
     "crashes",
     "anti-pattern",
-    "WRONG",
-    "BAD",
-    "do not use",
-    "don't use",
+    "wrong",
+    "bad",
+    "do not",
+    "don't",
+    "breaks",
+    "not a dict",
+    "dict)",  # e.g. "`{...}` (dict)" anti-pattern callout
+    "typeerror",
+    "instead of",
 )
 
 
 def _is_antipattern_context(line: str) -> bool:
     lower = line.lower()
-    return any(m.lower() in lower for m in _ANTIPATTERN_MARKERS)
+    return any(m in lower for m in _ANTIPATTERN_MARKERS)
+
+
+def _line_matches_dict_metric(line: str) -> bool:
+    return any(pat.search(line) for pat in _DICT_METRIC_PATTERNS)
+
+
+def _multiline_dict_return_spans(text: str) -> list[tuple[int, str]]:
+    """Flag multi-line dict metric returns like:
+
+        return {
+            "score": ...,
+            "feedback": ...,
+        }
+
+    Returns (line_number, snippet) pairs so callers can report precisely.
+    """
+    hits: list[tuple[int, str]] = []
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        # Opening line: `return {` with nothing past the brace on the same line
+        if re.search(r"return\s*\{\s*$", lines[i]):
+            # Peek the next up-to-6 lines for both "score" and "feedback" keys.
+            window = "\n".join(lines[i : i + 7])
+            if re.search(r"['\"]score['\"]\s*:", window) and re.search(
+                r"['\"]feedback['\"]\s*:", window
+            ):
+                hits.append((i + 1, lines[i].strip()))
+        i += 1
+    return hits
 
 
 @pytest.mark.parametrize(
-    "path",
-    sorted(REPO.glob(EXAMPLE_PY_PATTERN)),
-    ids=lambda p: f"{p.parent.name}/{p.name}",
+    "path", _iter_teaching_files(), ids=lambda p: str(p.relative_to(REPO))
 )
-def test_no_dict_metric_return_in_example(path: Path):
-    """Skill example scripts must not return dict metrics (crashes Evaluate)."""
-    for i, line in enumerate(path.read_text().splitlines(), 1):
-        if _DICT_RETURN_RE.search(line) and not _is_antipattern_context(line):
-            pytest.fail(
-                f"{path.relative_to(REPO)}:{i}: dict-returning metric detected:\n"
-                f"  {line.strip()}\n"
-                f"Use `dspy.Prediction(score=..., feedback=...)` instead — dicts crash "
-                f"dspy.Evaluate's parallel aggregator with `TypeError: int + dict`."
-            )
-
-
-def test_dict_metric_guidance_in_skill_md_only_as_antipattern():
-    """Skill MD files may mention dict metrics only as anti-patterns."""
+def test_no_dict_metric_guidance(path: Path):
+    """Every teaching file must use `dspy.Prediction(score, feedback)`, not a dict."""
+    text = _read(path)
     offenders: list[str] = []
-    for md in SKILLS.rglob("SKILL.md"):
-        text = _read(md)
-        for i, line in enumerate(text.splitlines(), 1):
-            if _DICT_RETURN_RE.search(line) and not _is_antipattern_context(line):
-                offenders.append(f"{md.relative_to(REPO)}:{i}: {line.strip()}")
+
+    for i, line in enumerate(text.splitlines(), 1):
+        if _line_matches_dict_metric(line) and not _is_antipattern_context(line):
+            offenders.append(f"{path.relative_to(REPO)}:{i}: {line.strip()}")
+
+    for i, snippet in _multiline_dict_return_spans(text):
+        # Heuristic: if the block is immediately preceded by a heading or line
+        # with an antipattern marker, allow it.
+        prev_lines = "\n".join(text.splitlines()[max(0, i - 4) : i - 1])
+        if _is_antipattern_context(prev_lines):
+            continue
+        offenders.append(f"{path.relative_to(REPO)}:{i}: {snippet} (multi-line dict)")
+
     assert not offenders, (
-        "Dict-returning metric guidance found without anti-pattern framing:\n  "
+        "Dict-returning metric guidance detected. Use "
+        "`dspy.Prediction(score=..., feedback=...)` — dicts crash "
+        "dspy.Evaluate's parallel aggregator:\n  " + "\n  ".join(offenders)
+    )
+
+
+# --- Rule 3: stale RLM defaults should not appear anywhere ------------------
+
+
+def test_no_stale_rlm_max_output_chars():
+    """`max_output_chars` default in DSPy 3.1.3 is 100_000, not 10_000."""
+    offenders: list[str] = []
+    stale_patterns = (
+        re.compile(r"max_output_chars\s*=\s*10_000\b"),
+        re.compile(r"max_output_chars\s*=\s*10000\b"),
+        re.compile(r"max_output_chars[^\n]*\|\s*10_000\s*\|"),  # table cells
+        re.compile(r"max_output_chars[^\n]*\|\s*10000\s*\|"),
+        re.compile(r"Output truncated at 10000 chars", re.IGNORECASE),
+        re.compile(r"Output truncated at 10_000 chars", re.IGNORECASE),
+    )
+    for path in _iter_teaching_files():
+        text = _read(path)
+        for i, line in enumerate(text.splitlines(), 1):
+            for pat in stale_patterns:
+                if pat.search(line):
+                    offenders.append(f"{path.relative_to(REPO)}:{i}: {line.strip()}")
+                    break
+    assert not offenders, (
+        "Stale `max_output_chars` default detected. DSPy 3.1.3 uses 100_000:\n  "
         + "\n  ".join(offenders)
     )
 
 
+# --- Rule 4: every skill ships a runnable example with --dry-run -----------
+
+
 @pytest.mark.parametrize("skill_dir", _iter_skill_dirs(), ids=lambda p: p.name)
 def test_every_skill_has_example(skill_dir: Path):
-    """Every skill directory must ship a runnable example_*.py (claim made in docs/usage.md)."""
+    """Every skill directory must ship a runnable example_*.py."""
     examples = list(skill_dir.glob("example_*.py"))
     assert examples, (
         f"{skill_dir.relative_to(REPO)}: no `example_*.py` found. Every skill "
@@ -119,3 +207,20 @@ def test_every_skill_has_example(skill_dir: Path):
             f"{ex.relative_to(REPO)}: example must support `--dry-run` so it "
             f"can be smoke-tested offline."
         )
+
+
+# --- Rule 5: docs/usage.md's example command list must mention every skill -
+
+
+def test_usage_doc_lists_every_skill_example():
+    """`docs/usage.md` lists the per-skill example commands; no skill should be missing."""
+    usage = _read(DOCS / "usage.md")
+    missing: list[str] = []
+    for skill_dir in _iter_skill_dirs():
+        # Each skill's example filename should appear in the usage doc.
+        for ex in skill_dir.glob("example_*.py"):
+            if ex.name not in usage:
+                missing.append(f"{skill_dir.name}/{ex.name}")
+    assert not missing, (
+        "`docs/usage.md` does not list these example scripts: " + ", ".join(missing)
+    )

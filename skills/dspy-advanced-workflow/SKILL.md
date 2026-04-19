@@ -31,7 +31,7 @@ Build `trainset` (15–50) and **separate** `valset` (15–50) as `dspy.Example(
 
 ### 4. Rich metric
 
-Write `rich_metric(gold, pred, trace=None, pred_name=None, pred_trace=None)` returning `{"score": 0..1, "feedback": "natural-language critique"}`. The feedback is load-bearing — it's what GEPA's reflection LM learns from. See `dspy-evaluation-harness`.
+Write `rich_metric(gold, pred, trace=None, pred_name=None, pred_trace=None)` returning `dspy.Prediction(score=0..1, feedback="natural-language critique")`. The feedback is load-bearing — it's what GEPA's reflection LM learns from. A dict with the same fields crashes `dspy.Evaluate`; only `dspy.Prediction` aggregates correctly. See `dspy-evaluation-harness`.
 
 ### 5. Baseline
 

@@ -11,7 +11,7 @@ GEPA (Genetic-Evolutionary Prompt Adaptation) is a reflective optimizer: it muta
 ## Prerequisites — do these first or GEPA wastes rollouts
 
 1. A `dspy.Module` that runs end-to-end (see `dspy-fundamentals`).
-2. A rich-feedback metric returning `{"score": float, "feedback": str}` (see `dspy-evaluation-harness`). **A float-only metric makes GEPA no better than MIPRO.**
+2. A rich-feedback metric returning `dspy.Prediction(score=float, feedback=str)` (see `dspy-evaluation-harness`). **A float-only metric makes GEPA no better than MIPRO.** A dict with the same fields crashes `dspy.Evaluate`'s parallel aggregator — use `dspy.Prediction`.
 3. `trainset` (15–50 examples) and a **separate** `valset` (15–50 examples). Optimizer will overfit trainset; valset selects the best candidate.
 4. A `reflection_lm` — a strong LM (often the same or stronger than the task LM) set to `temperature=1.0` for creative proposals.
 

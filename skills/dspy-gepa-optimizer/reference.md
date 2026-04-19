@@ -69,10 +69,10 @@ metric(
     trace: DSPyTrace | None = None,
     pred_name: str | None = None,
     pred_trace: DSPyTrace | None = None,
-) -> float | dict | str
+) -> float | dspy.Prediction | str
 ```
 
-Recommended return: `{"score": float, "feedback": str}`. When `pred_name` is set, return feedback targeted at that specific predictor's `pred_trace`.
+Recommended return: `dspy.Prediction(score=float, feedback=str)`. When `pred_name` is set, return feedback targeted at that specific predictor's `pred_trace`. A plain dict with the same keys crashes `dspy.Evaluate`'s parallel aggregator (`TypeError: unsupported operand type(s) for +: 'int' and 'dict'`); GEPA uses `dspy.Evaluate` internally for candidate scoring, so the crash happens inside GEPA too. `dspy.Prediction` defines `__float__`/`__add__` so it aggregates correctly.
 
 ## `component_selector` options
 

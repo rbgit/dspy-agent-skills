@@ -55,10 +55,10 @@ program = dspy.ChainOfThought(QA)
 
 def rich_metric(gold, pred, trace=None, pred_name=None, pred_trace=None):
     correct = pred.answer.strip().lower() == gold.answer.strip().lower()
-    return {
-        "score": 1.0 if correct else 0.0,
-        "feedback": "Correct." if correct else f"Expected {gold.answer!r}, got {pred.answer!r}.",
-    }
+    return dspy.Prediction(
+        score=1.0 if correct else 0.0,
+        feedback="Correct." if correct else f"Expected {gold.answer!r}, got {pred.answer!r}.",
+    )
 
 trainset = [dspy.Example(question="2+2?", answer="4").with_inputs("question"), ...]
 valset   = [dspy.Example(question="5*6?", answer="30").with_inputs("question"), ...]
@@ -91,6 +91,9 @@ uv run python example_metric.py --dry-run
 
 cd ../dspy-gepa-optimizer
 uv run python example_gepa.py --dry-run
+
+cd ../dspy-rlm-module
+uv run python example_rlm.py --dry-run
 
 cd ../dspy-advanced-workflow
 uv run python example_pipeline.py --dry-run

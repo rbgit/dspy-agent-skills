@@ -59,7 +59,7 @@ Fields support any serializable type including Pydantic models, `list[T]`, `dict
 | `dspy.ChainOfThought` | `ChainOfThought(signature, rationale_field=None, rationale_field_type=str, **config)` |
 | `dspy.ReAct` | `ReAct(signature: type[Signature], tools: list[Callable], max_iters: int = 20)` |
 | `dspy.ProgramOfThought` | `ProgramOfThought(signature, max_iters: int = 3, interpreter: PythonInterpreter \| None = None)` |
-| `dspy.RLM` | `RLM(signature, max_iterations=20, max_llm_calls=50, max_output_chars=10_000, verbose=False, tools=None, sub_lm=None, interpreter=None)` |
+| `dspy.RLM` | `RLM(signature, max_iterations=20, max_llm_calls=50, max_output_chars=100_000, verbose=False, tools=None, sub_lm=None, interpreter=None)` |
 
 ## `dspy.Module`
 
