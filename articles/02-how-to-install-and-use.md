@@ -1,6 +1,6 @@
 ---
 title: "How to install and use dspy-agent-skills"
-subtitle: "A fifteen-second path from clone to a coding agent that knows DSPy, GEPA, and RLM fluently. Works in Claude Code, Codex CLI, and anything else that respects the Agent Skills spec."
+subtitle: "Fifteen seconds to install. Five minutes to smoke-test. Twenty to forty minutes for a real GEPA run. Works in Claude Code, Codex CLI, and anything else that respects the Agent Skills spec."
 platforms: [x.com, linkedin, code-and-context]
 target_audience: AI and LLM enthusiasts ready to install and try dspy-agent-skills
 estimated_read_time: 5 min
@@ -60,7 +60,7 @@ cp -R skills/* ~/.agents/skills/   # Codex CLI
 Both harnesses auto-discover any directory containing a `SKILL.md` and register it on the next session.
 
 ![alt: flowchart of the three install paths all ending at a happy coding agent](placeholder-install-flow.png)
-<!-- IMAGE PROMPT (Nano Banana): "A horizontal flowchart illustration with three parallel paths converging into a single endpoint. Left path starts with a 'Claude Code /plugin' icon. Middle path starts with a 'terminal' icon running `./scripts/install.sh`. Right path starts with a file-folder copy icon. All three paths lead to a central glowing box labeled 'agent knows DSPy fluently' containing a small happy robot with a speech bubble that says 'compile my program'. Off-white background, flat editorial style, paths drawn as thin hand-drawn-feeling lines in muted indigo. 16:9." -->
+<!-- IMAGE PROMPT (Nano Banana): "A horizontal flowchart illustration with three parallel paths converging into a single endpoint. Left path starts with a 'Claude Code /plugin' icon. Middle path starts with a 'terminal' icon running `./scripts/install.sh`. Right path starts with a file-folder copy icon. All three paths lead to a central glowing box labeled 'agent has the DSPy skill loaded' containing a small happy robot with a speech bubble that says 'compile my program'. Off-white background, flat editorial style, paths drawn as thin hand-drawn-feeling lines in muted indigo. 16:9." -->
 
 ## Verifying the install
 

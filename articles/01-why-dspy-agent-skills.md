@@ -1,6 +1,6 @@
 ---
 title: "Why I built dspy-agent-skills"
-subtitle: "DSPy is the PyTorch for prompts. GEPA is the new gold-standard optimizer. RLM just made the context-window arms race obsolete. And none of it lands in your coding agent by default."
+subtitle: "DSPy turns prompts into programs. GEPA optimizes those programs without RL. RLM reasons over inputs bigger than any context window. None of this lands in your coding agent by default, so I packaged it as five skills that do."
 platforms: [x.com, linkedin, code-and-context]
 target_audience: AI and LLM enthusiasts who've heard of DSPy, GEPA, and RLM but haven't yet put them to work
 estimated_read_time: 6 min
@@ -15,7 +15,7 @@ I spent a week this April trying to get Claude Code and Codex CLI to write idiom
 
 The research was all there. The tooling was all there. The docs were all there. What was missing was a curated, spec-compliant way to hand an agent the relevant knowledge *once*, the way you'd onboard a new teammate.
 
-That's what [dspy-agent-skills](https://github.com/intertwine/dspy-agent-skills) is. Five [Agent Skills](https://agentskills.io/specification) that turn any compatible coding agent into a fluent DSPy user. Tested today against [Claude Code](https://code.claude.com/docs/en/skills) and [Codex CLI](https://developers.openai.com/codex/skills); compatible with the growing ecosystem around the spec.
+That's what [dspy-agent-skills](https://github.com/intertwine/dspy-agent-skills) is. Five [Agent Skills](https://agentskills.io/specification) that give any compatible coding agent working knowledge of idiomatic DSPy. Tested today against [Claude Code](https://code.claude.com/docs/en/skills) and [Codex CLI](https://developers.openai.com/codex/skills); compatible with the growing ecosystem around the spec.
 
 ## The three ideas behind it
 
@@ -27,17 +27,17 @@ The payoff, from the original paper: DSPy pipelines "outperform standard few-sho
 
 By DSPy 3.1.x (current as of April 2026), the framework has absorbed GEPA and RLM, a typed-signature system that respects Pydantic models, and the plumbing you actually need in production: caching, tracing, checkpointed optimizer state, MLflow hooks.
 
-### GEPA — reflective prompt evolution that beats RL
+### GEPA — reflective prompt evolution, instead of RL
 
-If DSPy is the programming model, [GEPA](https://arxiv.org/abs/2507.19457) is the compiler. Agrawal, Tan, and colleagues at UC Berkeley, Stanford, Databricks, and MIT (ICLR 2026 Oral) showed that letting a language model *reflect in plain English* on why a candidate program failed, then mutating the program's instructions accordingly, works shockingly well. Their headline number: GEPA outperforms GRPO-style reinforcement learning by up to 20% while using up to 35× fewer rollouts. It also beats the previous DSPy optimizer champion, MIPROv2, by over 10% on benchmarks like AIME-2025.
-
-One aside on the name. GEPA stands for **Genetic-Pareto**. If you search for the acronym, you'll run into a competing expansion, "Genetic-Evolutionary Prompt Adaptation", surprisingly often. As far as I can tell it appears in zero primary sources: not in the [paper](https://arxiv.org/abs/2507.19457), not in the [DSPy docs](https://dspy.ai/api/optimizers/GEPA/overview/), not in the [official gepa-ai repo](https://github.com/gepa-ai/gepa), not in independent writeups by [DeepWiki](https://deepwiki.com/stanfordnlp/dspy/4.5-gepa:-reflective-prompt-evolution) or [Arize](https://arize.com/blog/gepa-vs-prompt-learning-benchmarking-different-prompt-optimization-approaches/). It's a plausible-sounding LLM-hallucinated backronym that gets parroted by AI-driven summarizers (including, for a few embarrassing hours, my own skill pack; and including, when I researched this article, Google's own LLM-generated search summary). The "Pareto" in the real name is load-bearing: GEPA maintains a frontier of candidate programs, each good at different examples, rather than collapsing to a single winner. That's how it keeps exploring. Worth knowing so you can spot the bad expansion in the wild.
+If DSPy is the programming model, [GEPA](https://arxiv.org/abs/2507.19457) is the compiler. Agrawal, Tan, and colleagues at UC Berkeley, Stanford, Databricks, and MIT (ICLR 2026 Oral) show that letting a language model *reflect in plain English* on why a candidate program failed, then mutating the program's instructions accordingly, closes most of the gap with reinforcement learning. The paper's headline numbers: GEPA outperforms GRPO-style RL by 6% on average and up to 20%, while using up to 35× fewer rollouts. It beats the previous DSPy optimizer, MIPROv2, by over 10% on benchmarks like AIME-2025.
 
 The catch: GEPA only works if your metric can explain *why* something failed. A metric that returns 0.7 tells the reflection model nothing. A metric that returns `"wrong answer; cited doc ['mars'] but the evidence is in ['jupiter']"` teaches it everything.
 
-### RLM — the context window isn't the limit anymore
+> **Sidebar: the GEPA acronym.** GEPA stands for **Genetic-Pareto** ([paper](https://arxiv.org/abs/2507.19457), [DSPy docs](https://dspy.ai/api/optimizers/GEPA/overview/), [official gepa-ai repo](https://github.com/gepa-ai/gepa)). You'll find a competing expansion, "Genetic-Evolutionary Prompt Adaptation", floating around AI-generated summaries; it doesn't appear in any primary source I could find, so I've been calling it a plausible-sounding LLM hallucination. The "Pareto" part is load-bearing: GEPA keeps a frontier of candidate programs rather than collapsing to one, and that frontier is how it keeps exploring.
 
-[Recursive Language Models](https://arxiv.org/abs/2512.24601) (Zhang, Kraska, Khattab, Dec 2025) treat the prompt as an environment, not a payload. Inside a sandboxed Python REPL (DSPy uses Deno + Pyodide WASM), the model writes code to slice, summarize, and recursively sub-query arbitrarily large inputs. The result: an RLM built on Qwen3-8B outperforms the base Qwen3-8B by 28.3% on average and approaches GPT-5 on long-context benchmarks, while processing inputs two orders of magnitude beyond the underlying context window.
+### RLM — treating long context as an environment, not a payload
+
+[Recursive Language Models](https://arxiv.org/abs/2512.24601) (Zhang, Kraska, Khattab, Dec 2025) treat the prompt as an environment rather than a payload. Inside a sandboxed Python REPL (DSPy uses Deno + Pyodide WASM), the model writes code to slice, summarize, and recursively sub-query arbitrarily large inputs. The paper's headline result: an RLM built on Qwen3-8B outperforms the base Qwen3-8B by 28.3% on average and approaches GPT-5 on long-context benchmarks, while processing inputs two orders of magnitude beyond the underlying context window.
 
 Alex Zhang's [origin blog post](https://alexzhang13.github.io/blog/2025/rlm/) frames it well. RLMs separate *variable space* (what's in the REPL's memory) from *token space* (what the LM actually sees), and that separation is the real lever for fighting what the field has started calling context rot.
 

@@ -11,7 +11,7 @@ estimated_read_time: 9 min
 
 ## The committed numbers
 
-Three examples. All three runs used `auto="light"` and `seed=0`, free OpenRouter models only, a single reflection LM (Nemotron-3-super-120B-a12b). Total spend to reproduce: **zero dollars** if you stay inside OpenRouter's free tier.
+Three examples. All three runs used `auto="light"` and `seed=0`, free OpenRouter models only, a single reflection LM (Nemotron-3-super-120B-a12b). Total spend to reproduce: zero dollars if you stay inside OpenRouter's free tier.
 
 | Example | Task LM | Baseline | Optimized | Δ | Mutations accepted |
 |---|---|---:|---:|---:|---:|
@@ -19,11 +19,13 @@ Three examples. All three runs used `auto="light"` and `seed=0`, free OpenRouter
 | [02 multi-step math reasoning](https://github.com/intertwine/dspy-agent-skills/tree/main/examples/02-math-reasoning) | Liquid LFM 2.5 (1.2B) | 45.00 | **70.00** | +25.00 | 5 |
 | [03 typed invoice extraction](https://github.com/intertwine/dspy-agent-skills/tree/main/examples/03-invoice-extraction) | Liquid LFM 2.5 (1.2B) | 0.833 | **0.931** | +0.098 | 5 |
 
-I'll walk each one top-to-bottom, then end with the saturation lesson that forced me to pick a 1.2B task LM for two of them.
+**Caveats you should hold in your head while reading the rest.** These are single-seed runs on small train/val splits (15–34 train, 9–12 val). They're toy-but-real demos, not a benchmark. Free-tier provider behaviour shifts over time, so a re-run won't be perfectly deterministic; expect a few points of drift. For rigorous numbers, the [GEPA paper](https://arxiv.org/abs/2507.19457) and the [DSPy AIME tutorial](https://dspy.ai/tutorials/gepa_aime/) are the right references.
+
+I'll walk each example top-to-bottom, then end with the saturation lesson that forced me to pick a 1.2B task LM for two of them.
 
 ## Example 01: RAG QA with citations
 
-**The task.** Twelve short articles about the solar system (one per planet plus a few moons). Fifteen questions that each have a single authoritative source. The program retrieves top-3 passages via BM25, then passes them to a `dspy.ChainOfThought` that must emit both an answer *and* the doc IDs it used as evidence.
+**The task.** Twelve short articles about the solar system (one per planet plus a few moons). Twenty-five labeled questions split fifteen-train / ten-val, each with a single authoritative source. The program retrieves top-3 passages via BM25, then passes them to a `dspy.ChainOfThought` that must emit both an answer *and* the doc IDs it used as evidence.
 
 ```python
 class AnswerWithCitation(dspy.Signature):
@@ -136,11 +138,11 @@ DSPY_TASK_MODEL=openrouter/liquid/lfm-2.5-1.2b-instruct:free \
   python run.py --optimize --auto light --seed 0
 ```
 
-About 20–45 minutes depending on free-tier congestion. You should land within a few points of the committed number (single-seed runs aren't perfectly deterministic because free-tier model providers occasionally adjust behind the endpoint).
+About 20–45 minutes depending on free-tier congestion. Expect a few points of drift from the committed numbers (see the caveats at the top).
 
 ## What the examples aren't
 
-Three reproducible demos, not a benchmark suite. Two dozen to three dozen examples in each train/val set is small by academic standards. The point is to show the *shape* of a GEPA loop end-to-end on a single machine in under an hour, not to claim state-of-the-art on any particular task. If you want rigorous numbers, the [GEPA paper](https://arxiv.org/abs/2507.19457) is the source; the [DSPy tutorials](https://dspy.ai/tutorials/gepa_aime/) show the AIME benchmark run properly.
+The point of the three demos is to show the *shape* of a GEPA loop end-to-end on a single machine in under an hour, not to claim state-of-the-art on any task. For rigorous benchmark comparisons, the [GEPA paper](https://arxiv.org/abs/2507.19457) is the source and the [DSPy AIME tutorial](https://dspy.ai/tutorials/gepa_aime/) shows a proper benchmark run.
 
 ## Next
 

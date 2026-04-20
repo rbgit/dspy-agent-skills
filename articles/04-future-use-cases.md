@@ -1,6 +1,6 @@
 ---
 title: "Where dspy-agent-skills goes next"
-subtitle: "Composition patterns I'm betting on: RLM inside a GEPA-optimized module, multi-agent GEPA, production-grade deployment, and the community contributions that would push this forward fastest."
+subtitle: "Three categories: next examples I'd add (RLM-inside-GEPA, deployment recipes), production patterns the skills currently stop short of (serving, regression harness, Pareto selection), and one speculative research idea I'd like to see someone try."
 platforms: [x.com, linkedin, code-and-context]
 target_audience: AI and LLM enthusiasts who want to see where this stack is heading and how to contribute
 estimated_read_time: 7 min
@@ -9,17 +9,17 @@ estimated_read_time: 7 min
 ![alt: futuristic composition diagram of RLM nested inside a DSPy module feeding into a GEPA optimizer feeding into a deployed API](placeholder-hero-future.png)
 <!-- IMAGE PROMPT (Nano Banana): "A conceptual illustration of nested capabilities: at the center, a small REPL-window icon labeled 'dspy.RLM' sits inside a larger module box labeled 'dspy.Module'. The module box feeds an arrow into a rotating gear labeled 'GEPA'. The gear's output is an arrow to a cloud icon labeled 'production API' with a small graph showing stable latency. Around the edges, faint dotted lines suggest parallel copies of the whole pipeline. Editorial tech illustration style, off-white background, muted teal and amber accents, clean sans-serif labels. 16:9." -->
 
-## What's already possible (v0.1.0)
+## What's already in v0.1.0
 
-Before the futures, let's be honest about the present tense. Right now, with [dspy-agent-skills 0.1.0](https://github.com/intertwine/dspy-agent-skills):
+Before the "next" stuff, here's what the current release actually does, end-to-end:
 
-- A new DSPy user can clone the repo, run the examples, and ship an optimized program to production in an afternoon.
-- A coding agent (Claude Code, Codex CLI, or anything else that respects the [Agent Skills spec](https://agentskills.io/specification)) picks up DSPy fluency the moment the skills are installed.
+- A new DSPy user can clone the repo, run the examples, and produce a validated optimized program artifact in an afternoon. (Serving that artifact in production is a separate piece of work — see section 3.)
+- A coding agent (Claude Code, Codex CLI, or anything else that respects the [Agent Skills spec](https://agentskills.io/specification)) picks up the DSPy contracts the moment the skills are installed.
 - Every claim in the skill pack is traceable to [dspy.ai](https://dspy.ai/), a paper, or the harness's own spec. Sixty automated tests prevent the kinds of teaching-material drift I hit during the first drafts.
 
-The four directions below are where I'd push next. Some are technical: new composition patterns the current skills don't yet cover. Some are about broader ecosystem gravity.
+The four sections below are labeled by status: **(a) obvious next examples I'd add to the pack**, **(b) production patterns the skills currently gesture at but don't implement**, and **(c) one research hypothesis I'd love to see tested**, which is explicitly not something this repo does.
 
-## 1. RLM as a tool inside a GEPA-optimized program
+## 1. RLM as a tool inside a GEPA-optimized program *(next example)*
 
 The `dspy-rlm-module` skill covers [Recursive Language Models](https://arxiv.org/abs/2512.24601) standalone: pass a huge document, the RLM writes Python to slice and query it, you get a single answer. The interesting composition happens when RLM becomes one component inside a larger `dspy.Module` that GEPA optimizes.
 
@@ -49,24 +49,22 @@ GEPA now has two instruction surfaces to tune: the RLM's exploration prompt and 
 
 The outstanding question for the skill pack: do I ship an opinionated "RLM-inside-GEPA" starter example, or leave the composition as an exercise? My current plan is to wait until I have a real internal use case for it, so the example is grounded rather than theoretical. (If you have one, [open an issue](https://github.com/intertwine/dspy-agent-skills/issues).)
 
-## 2. Multi-agent GEPA
+## 2. GEPA-optimizing the reflection LM itself *(research speculation — NOT implemented)*
+
+**This section is a research hypothesis, not a feature of the current pack. Read it as "here's a thing I'd like to see someone try," not as something that already works.**
 
 GEPA's reflection LM reads your metric's feedback and proposes new instructions. Nothing in the protocol requires the task LM and the reflection LM to be the same model. [My validated example 02](03-inside-the-examples.md) used a 1.2B task LM with a 120B reflection LM explicitly because the reflection LM needs more capacity than the thing it's teaching.
 
-Extend the asymmetry further: **the reflection LM can itself be a GEPA-optimized program**. A meta-program whose job is "given a student program and its failures, propose better instructions" can be trained on a corpus of (failure, successful-mutation) pairs harvested from real GEPA runs.
+The speculative extension: **could the reflection LM itself be a GEPA-optimized program**? A meta-program whose job is "given a student program and its failures, propose better instructions" could in principle be trained on a corpus of (failure, successful-mutation) pairs harvested from real GEPA runs.
 
-I'm not aware of this having been done publicly yet. If it works, the implication is compounding: every optimization run makes the optimizer itself better at optimizing. The GEPA paper ([Agrawal et al., ICLR 2026 Oral](https://arxiv.org/abs/2507.19457)) frames reflective evolution as "outperforming reinforcement learning with 35× fewer rollouts", at which point the meta-layer gets cheap enough to consider seriously.
+I haven't seen this done publicly; I haven't tried it; I don't know whether the economics work out against simply paying for a stronger off-the-shelf reflection model. The GEPA paper's ~35× rollout advantage over RL is what makes me think it might be worth investigating. If anyone does try it, I'd be very interested in the result. [Open an issue](https://github.com/intertwine/dspy-agent-skills/issues) or ping me.
 
-A skill to cover this pattern would live alongside `dspy-gepa-optimizer` and teach:
-
-- How to log GEPA mutation proposals with enough context to later train on them.
-- How to shape a metric for the meta-task (score = did the proposed instruction improve the student's full-valset score?).
-- When the complexity is worth it vs. just paying for a stronger off-the-shelf reflection LM.
+If it ever becomes practical, a skill would need to cover how to log mutation proposals with enough context to later train on them, how to shape a metric for the meta-task (did the proposed instruction actually lift the student's full-valset score?), and when the complexity pays off versus the off-the-shelf alternative.
 
 ![alt: diagram of a meta-GEPA loop where a GEPA-optimized reflection model improves a student GEPA optimization](placeholder-meta-gepa.png)
 <!-- IMAGE PROMPT (Nano Banana): "A recursive conceptual diagram showing two concentric loops. Inner loop: a student DSPy program cycling through 'GEPA optimize' with a reflection LM as a side element. Outer loop: the reflection LM itself is being trained by a larger 'meta-GEPA' process using logs of past (failure, mutation) pairs. Arrows show information flowing from the inner loop's logs outward to feed the outer loop. Subtle gradient suggesting depth, annotations in thin monospace font. Off-white background, flat vector style with hand-drawn feel, muted plum and green accents. 16:9." -->
 
-## 3. Production-grade deployment patterns
+## 3. Production deployment patterns *(the skills currently stop here)*
 
 The skill pack stops after `optimized.save("program.json")`. Production starts there. A few patterns I'd add:
 
@@ -78,7 +76,7 @@ The skill pack stops after `optimized.save("program.json")`. Production starts t
 
 **Cost and latency observability.** `dspy.configure(track_usage=True)` accumulates token counts on every prediction. Pair it with [a lightweight structured logger](https://hamel.dev/blog/posts/prompt/) and you have the same production-eval loop Hamel writes about, except grounded in a formal program rather than an ad-hoc prompt.
 
-## 4. Ecosystem contributions that would move the needle
+## 4. Ecosystem contributions that would move the needle *(open)*
 
 Concrete things that don't exist yet, ordered roughly by how much I'd personally use them:
 
