@@ -57,6 +57,10 @@ Each example ships `pipeline.py` (module + Signature + metric), `run.py` (CLI: `
 5. **`reflection_minibatch_size` matters more than you'd expect.** With small minibatches and high baseline accuracy, GEPA keeps sampling all-correct subsets and the reflection LM is never called. Raise to 6–8 when baseline > 0.7.
 6. **Modern 8B+ open models saturate simple extraction and grade-school math**. The math and invoice examples use Liquid 1.2B to create real headroom; stronger models produce baseline ≥ 0.95 and GEPA correctly no-ops.
 
+### GEPA naming correction (v0.1.0 follow-up)
+
+GEPA stands for **Genetic-Pareto**, per the [paper](https://arxiv.org/abs/2507.19457) and every primary source. An earlier version of `skills/dspy-gepa-optimizer/SKILL.md` used the expansion "Genetic-Evolutionary Prompt Adaptation", which turns out to be an LLM-hallucinated backronym with no primary-source support. Fixed the skill; added a short note inline. The articles under `articles/` explain the confusion and where it propagates from.
+
 ### Post-release review fixes (Codex audit)
 
 - Replaced `result.overall_score` with the real attribute `result.score` in every skill (`dspy.EvaluationResult` does not have `.overall_score`).

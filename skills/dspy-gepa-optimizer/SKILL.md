@@ -6,7 +6,9 @@ when_to_use: User asks to optimize/compile/tune a DSPy program, mentions GEPA or
 
 # DSPy GEPA Optimizer (3.1.x)
 
-GEPA (Genetic-Evolutionary Prompt Adaptation) is a reflective optimizer: it mutates a program's instructions and few-shots using an LM that reads your metric's **textual feedback** and proposes improvements. It maintains a Pareto frontier across validation tasks and is the default recommendation for complex DSPy workloads in 2026.
+GEPA (Genetic-Pareto) is a reflective optimizer: it mutates a program's instructions and few-shots using an LM that reads your metric's **textual feedback** and proposes improvements. It maintains a Pareto frontier across validation tasks and is the default recommendation for complex DSPy workloads in 2026.
+
+> The expansion "Genetic-Evolutionary Prompt Adaptation" that appears in some AI-generated summaries is an LLM-hallucinated backronym. The [paper](https://arxiv.org/abs/2507.19457) defines GEPA as Genetic-Pareto; the "Pareto" is load-bearing (GEPA keeps a frontier of candidates rather than collapsing to one).
 
 ## Prerequisites — do these first or GEPA wastes rollouts
 
