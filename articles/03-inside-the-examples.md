@@ -117,13 +117,13 @@ Two out of three examples use a **1.2B-parameter** task LM. That's deliberate.
 
 GEPA shines when there's signal to work with. If the baseline is already 0.95 on a task, every minibatch GEPA samples is all-correct, the reflection LM is never called, and the optimizer correctly no-ops. This is **not a bug**. It's GEPA's designed behavior: don't propose changes when there's nothing to improve.
 
-But for a *demo*, a no-op is a boring story. So I went looking for a task-model/task combination that produced enough failure signal for GEPA to actually exercise. Below 1B parameters (Gemma 3 4B, for example), OpenRouter's free tier either doesn't accept system prompts or hits structural format-output limits. Above 8B, grade-school math and typed extraction are already solved. 1.2B is the sweet spot for this particular demo.
+But for a *demo*, a no-op is a boring story. So I went looking for a task-model/task combination that produced enough failure signal for GEPA to actually exercise. Most of the smaller free-tier models I tried had disqualifying problems: Gemma 3 4B on OpenRouter rejects system prompts outright, and several others hit structural format-output limits that make Pydantic-typed extraction impossible. Above 8B, grade-school math and typed extraction are already solved. Liquid LFM 2.5 at 1.2B was the smallest free-tier model I could find that still accepts the DSPy prompt shape, and it ended up being the sweet spot for this demo.
 
 The practical implication: **if you run the pack and see baseline == optimized, check the difficulty of your data relative to your task LM**. Either harden the data, weaken the task LM, or accept that the task is solved and spend your optimization budget somewhere that matters. [Arize's independent benchmark](https://arize.com/blog/gepa-vs-prompt-learning-benchmarking-different-prompt-optimization-approaches/) of GEPA against other optimizers makes the same point with different wording: optimizer choice matters less than metric quality and task difficulty.
 
 ## The $0 reproducibility promise
 
-Every committed number in the table above came from a single deterministic run (`seed=0`). The model choices are captured in each example's `results.json`. The optimized programs are committed as `optimized_program.json` alongside the source, so you can load and re-score them against fresh data without re-running GEPA.
+Every committed number in the table above came from a single run with `seed=0`. The model choices are captured in each example's `results.json`. The optimized programs are committed as `optimized_program.json` alongside the source, so you can load and re-score them against fresh data without re-running GEPA. (Seeding does not guarantee bit-exact reproducibility here: free-tier endpoints don't expose deterministic sampling, so a fresh run with the same seed will drift a few points.)
 
 To reproduce:
 

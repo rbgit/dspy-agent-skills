@@ -103,7 +103,7 @@ DSPY_REFLECTION_MODEL=openrouter/nvidia/nemotron-3-super-120b-a12b:free
 DSPY_CACHEDIR=.cache/dspy
 ```
 
-Defaults are free-tier OpenRouter models. No credit card, no rate-limit surprises as long as you stay under 20 requests/minute and 2000/day. I document paid fallbacks in each example's README in case you hit the daily cap.
+Defaults are free-tier OpenRouter models. No credit card required; the main constraints are 20 requests/minute and 2000/day, and free-tier providers occasionally rate-limit or adjust behind the endpoint. I document paid fallbacks in each example's README in case you hit the daily cap or want deterministic-ish behavior.
 
 ## A five-minute first session
 

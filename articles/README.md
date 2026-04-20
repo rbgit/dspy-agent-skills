@@ -30,4 +30,4 @@ All technical claims are sourced. Key citations used across the series:
 
 ## Writing notes
 
-The articles were drafted and then humanized with the `writing-humanizer` skill — em dashes trimmed, filler removed, inline-header bullet lists converted to paragraphs, AI-prose patterns excised. If you spot a line that still reads as AI-generated, [open an issue](https://github.com/intertwine/dspy-agent-skills/issues).
+The articles were drafted and then passed through the `writing-humanizer` skill: em dashes reduced, filler phrases removed, inline-header bullet lists converted to paragraphs, common AI-prose patterns excised. The articles aren't fully em-dash-free (some remain in section headings and code snippets where they read cleanly), but the rhetorical "Not X—it's Y" and setup-em-dash patterns are gone. If you spot a line that still reads as AI-generated, [open an issue](https://github.com/intertwine/dspy-agent-skills/issues).

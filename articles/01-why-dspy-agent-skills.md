@@ -62,7 +62,7 @@ Plus three end-to-end examples that actually show GEPA improving a real metric o
 
 ## The bar I held myself to
 
-Two tests. First, a curious AI engineer clones the repo and the thing works end-to-end in under five minutes, on a free-tier API key, without editing source code. Second, every claim in the skills is traceable to an official source: `dspy.ai` for DSPy, the GEPA paper for optimizer claims, the Claude Code and Codex CLI docs for spec details.
+Two tests. First, a curious AI engineer clones the repo and can install and smoke-test it in under five minutes on a free-tier API key, without editing source code. (A full GEPA run on the live examples takes more like 20–40 minutes.) Second, every claim in the skills is traceable to an official source: `dspy.ai` for DSPy, the GEPA paper for optimizer claims, the Claude Code and Codex CLI docs for spec details.
 
 Codex [reviewed the repo](https://github.com/intertwine/dspy-agent-skills/blob/main/docs/CHANGELOG.md) and found four rounds of subtle errors I'd introduced while drafting. Each round I fixed the specific finding *and* added a regression test so the issue can't come back. The final test suite has 60 assertions. Most of them exist because I got something wrong the first time.
 
